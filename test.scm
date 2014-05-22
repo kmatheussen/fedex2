@@ -111,7 +111,7 @@
                       (fix Func Result))))
 
 (define-match bubble-shot
-  [A]       :> (list A)
+  [A      ] :> (list A)
   [A B . R] :> (cons B (bubble-shot (cons A R))) :where (> A B)
   [A   . R] :> (cons A (bubble-shot R)))
  

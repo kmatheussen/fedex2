@@ -28,7 +28,7 @@ The macro is by itself written using the 'define-match' macro, bootstrapped from
 
 ```scheme
 (define-match transform-to-check-similarities-0
-  R                            _ R _       :> R
+  R                            _ R _______ :> R
   [if Test Body F]             F R Varlist :> `[if ,Test ,(transform-to-check-similarities-0 Body F R Varlist) ,F]
   [let [[Varname Value]] Body] F R Varlist :> (let ((Prev-value (varlist-value Varname Varlist)))
                                                 (if (eq? Prev-value '___not-in-varlist)

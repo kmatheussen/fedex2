@@ -1,134 +1,13 @@
-#!
-(load "converter.shen")
-"STARTING NOW"
-(PPRINT (create-matcher-func  prime? [A  2 (value *s*) 1
-                                         BW (value *u*) (value *s*) 2]))
-(QUIT)
 
-!#
-
-(use-modules (ice-9 debug))
-(use-modules (ice-9 rdelim))
-(use-modules (ice-9 pretty-print))
-
-;;(set! (show-backtrace) #t)
-(debug-enable 'debug)
-(read-enable 'positions)
-
-(use-modules (ice-9 optargs)
-	     (ice-9 format)
-	     (srfi srfi-1)
-	     (srfi srfi-13))
-
-(define (to-string a)
-  (cond ((symbol? a)
-         (symbol->string a))
-        ((number? a)
-         (number->string a))
-        ((equal? #t a)
-         "#t")
-        ((equal? #f a)
-         "#f")
-        ((keyword? a)
-         (<-> "#:" (to-string (keyword->symbol a))))
-        (else
-         a)))
-
-(define (<-> . args) (apply string-append (map to-string args)))
-(define (<_> . args) (string->symbol (apply <-> args)))
-
-(define (c-display . args)
-  (for-each (lambda (arg)
-              (display arg)
-              (display " "))
-            args)
-  (newline))
-
-(define (get-system-output command)
-  (let* ((logfilename "/tmp/snd-ls-logtemp")
-         (ret (system (<-> command ">" logfilename))))
-    (let* ((output "")
-	   (fd (open-file logfilename "r"))
-	   (line (read-line fd)))
-      (while (not (eof-object? line))
-        (set! output (<-> output line))
-	     (set! line (read-line fd)))
-      (close fd)
-      (system (<-> "rm " logfilename))
-      output)))
-
-(define (write-string-to-file filename string)
-   (define fd (open-file filename "w"))
-   (display string fd)
-   (close fd))
+;; All functions in this file must be defined with define-match. If not, they will not be included in bootstrapped.scm
 
 #!
-(write-string-to-file "/tmp/tmp.shen" "hello!")
-!#
 
-
-(define (remove-everything-before string)
-  (if (and (string=? (substring string 0 1) "S")
-           (string=? (substring string 0 (string-length "STARTING NOW")) "STARTING NOW"))
-      (string-drop-right (substring string (+ 2 (string-length "STARTING NOW")))
-                         1)
-      (remove-everything-before (substring string 1))))
-
-(define (run-converted-code funcname string-code)
-  (let ((shen-filename "/tmp/tmp.shen")
-        (sh-filename "/tmp/tmp.sh"))
-    (write-string-to-file shen-filename
-                          (<-> "(load \"/home/ksvalast/fedex2/converter.shen\")\n"
-                               "\"STARTING NOW\"\n"
-                               "(create-matcher-func " funcname " " string-code ")\n"
-                               "(QUIT)"))
-    (write-string-to-file sh-filename
-                          (<-> "echo '(load \"" shen-filename "\")' | /home/ksvalast/Shen15/ShenSource/Platforms/SBCL/Shen.exe --noprint --non-interactive"))
-    (let* ((generated-code-string (remove-everything-before (get-system-output (<-> "sh " sh-filename))))
-           (generated-code (read (open-input-string generated-code-string))))
-      (pretty-print generated-code)
-      generated-code)))
-
-
-(run-converted-code "newprime"
-                    (<-> "[A  2           (value *s*) 1"
-                         " BW (value *u*) (value *s*) 2]"))
-
-(define :where ':where)
-
-(define (convert-matchers matcher)
-  (c-display matcher)
-  (cond ((null? matcher)
-         "[]")
-        ((pair? matcher)
-         (<-> "[" (apply <-> (map (lambda (m)
-                                    (<-> (convert-matchers m) " "))
-                                  matcher))
-              "]"))
-        ((equal? ':> matcher)
-         "(value *s*)")
-        ((equal? '_ matcher)
-         "(value *u*)")
-        ((equal? #:where matcher)
-         "(value *where*)")
-        ((equal? ':where matcher)
-         "(value *where*)")
-        ((equal? :where matcher)
-         "(value *where*)")
-        ((string? matcher)
-         (<-> "\"" matcher "\""))
-        (else
-         (<-> matcher))))
-
-(convert-matchers '(A 2 :> 1))
-
-(convert-matchers '( '()) )
-
-[quote [2 3 ] ] 
 
 (define-macro (define-match funcname . matchers)
   (run-converted-code (<-> funcname)
                       (convert-matchers matchers)))
+
 
 (define-match newprime2
   A  2 :> 1
@@ -152,15 +31,12 @@
 (prime? 90 5)
 
 (eval-string "[define [newprime2 ___Arg1 ___Arg2] [define [___Func1] [let [[A ___Arg1]] [if [eqv? ___Arg2 2] 1 [___Func2]]]] [define [___Func2] [let [[BW ___Arg1]] 2]] [___Func1]]")
-
+!#
 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define (error-no-match)
-  (error 'no-match))
 
 (define-match test
   A A :> (begin (pretty-print "Correct: ") (pretty-print A) (pretty-print "") #t)
@@ -169,6 +45,15 @@
 (test (+ 2 3) 5)
 (test '(5 2) '(5 2))
 (test (test (+ 3 4) 3) #f)
+
+;;(if (defined? 'is-bootstrapping)
+;;    (set! test (lambda (a b) #t)))
+
+(if (defined? 'is-testing)
+    (let ((old-test test))
+      (set! test (lambda (a b)
+                   (if (not (old-test a b))
+                       (error 'failure'))))))
 
 ;;;;;;;;;;;;;;;
 
@@ -199,7 +84,6 @@
 
 ;;;;;;;;;;;;;;;
 
-(define *my-gensym-N* 0)
 (define-match with-clean-gensym
   A :> (begin (set! *my-gensym-N* 0)
               (A)))
@@ -225,8 +109,8 @@
 
 (define-match varlist-value
   _   []              :> '___not-in-varlist
-  A   [[A Value] | _] :> Value
-  Var [V | Vs]        :> (varlist-value Var Vs))
+  A   [[A Value] . _] :> Value
+  Var [V . Vs]        :> (varlist-value Var Vs))
 
 (test (varlist-value 5 (create-varlist)) '___not-in-varlist)
 (test (varlist-value 5 (cons-varlist 1 "a" (create-varlist))) '___not-in-varlist)
@@ -242,7 +126,7 @@
                                                 (if (eq? Prev-value '___not-in-varlist)
                                                     `[let [[,Varname ,Value]]
                                                        ,(transform-to-check-similarities-0 Body F R (cons-varlist Varname Value Varlist))]
-                                                    `[if [eqv? ,Varname ,Value]
+                                                    `[if [equal? ,Varname ,Value]
                                                         ,(transform-to-check-similarities-0 Body F R Varlist)
                                                         ,F]))
   [let Vars Body]              F R Varlist :> `[let ,Vars ,(transform-to-check-similarities-0 Body F R Varlist)])
@@ -251,6 +135,7 @@
 (define-match transform-to-check-similarities
   Body Failure Result :> (transform-to-check-similarities-0 Body Failure Result (create-varlist)))
 
+(display "HOOOLA")(newline)
 (test (transform-to-check-similarities '[if [pair? A]
                                            [let [[___MatchCar1 [car A]]
                                                  [___MatchCdr2 [cdr A]]]
@@ -264,11 +149,37 @@
           [let [[___MatchCar1 [car A]]
                 [___MatchCdr2 [cdr A]]]
             [let [[B ___MatchCar1]]
-              [if [eqv? B ___MatchCar3]
+              [if [equal? B ___MatchCar3]
                   "r"
                   "f"]]]
           "f"])
-      
+(display "HOOOLA finished")(newline)
+
+
+;;;;;;;;;;;;;;;
+
+(define-match has-pipe
+  M   :> #f :where (not (pair? M))
+  []  :> #f
+  M   :> #t :where (eq? (car M) (string->symbol "|"))
+  M   :> (has-pipe (cdr M)))
+
+(test (has-pipe #f) #f)
+(test (has-pipe '()) #f)
+(test (has-pipe '(| b)) #t)
+(test (has-pipe '(a | b)) #t)
+(test (has-pipe '(a (|))) #f)
+
+(define-match pipe-to-dot
+  [] :> '[]
+  M  :>  (cadr M) :where (eq? (car M) (string->symbol "|"))
+  M  :> (cons (car M) (pipe-to-dot (cdr M))))
+
+;; (string->symbol "|")) (this commented line is here only in order to fix colors in emacs)
+
+(test (pipe-to-dot '(a b)) '(a b))
+(test (pipe-to-dot '(a | b)) '(a . b))
+(test (pipe-to-dot '(a b | c)) '(a b . c))
 
 
 ;;;;;;;;;;;;;;;
@@ -278,6 +189,8 @@
   I  [] F R :> `[if [null? ,I]
                     ,R
                     ,F]
+  Input-var Matcher-var F R :> (create-single-matcher Input-var (pipe-to-dot Matcher-var) F R)
+                               :where (has-pipe Matcher-var)
   Input-var Matcher-var F R :> (let* ((Car-var (my-gensym '___MatchCar))
                                       (Cdr-var (my-gensym '___MatchCdr))
                                       (Inner-Result (create-single-matcher Cdr-var (cdr Matcher-var) F R))
@@ -315,6 +228,15 @@
 (test (with-clean-gensym (lambda () (create-single-matcher 'A '_ "f" "r")))
       "r")
 
+(test (with-clean-gensym (lambda () (create-single-matcher 'A '[B . B] "f" "r")))
+      '(if (pair? A)
+           (let ((___MatchCar1 (car A))
+                 (___MatchCdr2 (cdr A)))
+             (let ((B ___MatchCar1))
+               (let ((B ___MatchCdr2))
+                 "r")))
+           "f"))
+
 (test (with-clean-gensym (lambda () (create-single-matcher 'A '[B B] "f" "r")))
       `[if [pair? A]
           [let [[___MatchCar1 [car A]]
@@ -329,6 +251,7 @@
                           "f"]]]
                   "f"]]]
           "f"])
+
 (test (with-clean-gensym (lambda () (create-single-matcher 'A '[[2] 4] "f" "r")))
       `[if [pair? A]
           [let [[___MatchCar1 [car A]]
@@ -356,10 +279,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-match create-matcher-matcher-0
-  []     []     _      Result :> Result
-  [I|Is] [M|Ms] Failed Result :> (create-single-matcher I M
-                                                        Failed
-                                                        (create-matcher-matcher-0 Is Ms Failed Result)))
+  []       []     _      Result :> Result
+  [I . Is] [M . Ms] Failed Result :> (create-single-matcher I M
+                                                            Failed
+                                                            (create-matcher-matcher-0 Is Ms Failed Result)))
 
 (define-match create-matcher-matcher
   Inputs Matchers Failure Result :> (transform-to-check-similarities (create-matcher-matcher-0 Inputs Matchers Failure Result)
@@ -382,16 +305,16 @@
 
 (test (with-clean-gensym (lambda () (create-matcher-matcher '[A B] '[C C] "n" "r")))
       `[let [[C A]]
-         [if [eqv? C B]
+         [if [equal? C B]
              "r"
              "n"]])
 
- ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-match list-split-0
-  Before [] Where Func            :> (Func Before '[])
-  Before [Where|After] Where Func :> (Func Before After)
-  Before [A|After]     Where Func :> (list-split-0 (append Before [list A]) After Where Func))
+  Before [             ] Where Func :> (Func Before '[])
+  Before [Where . After] Where Func :> (Func Before After)
+  Before [A     . After] Where Func :> (list-split-0 (append Before [list A]) After Where Func))
 
 (define-match list-split
   All Where Func :> (list-split-0 '() All Where Func))
@@ -403,8 +326,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-match get-matcher-where
-  [Where What | Rest] Kont :> (Kont What Rest) :where (eqv? Where :where)
-  Rest                Kont :> (Kont [quote ___no_where] Rest))
+  [Where What . Rest] Kont :> (Kont What Rest) :where (eqv? Where :where)
+  Rest                Kont :> (Kont '___no_where Rest))
 
 (define-match get-matchers
   []  :> '[]
@@ -451,27 +374,24 @@
 (define-match make-local-func
   Name Body :> `[define ,Name ,Body])
 
-(define (nth n list)
-  (list-ref list (- n 1)))
-
 (define-match create-local-funcs-0
-  _  []     [Error-func] :> '[]
-  Is [M|Ms] [F1 F2|Fs]   :> (let* ((Left-side  (nth 1 M))
-                                   (Right-side (nth 2 M))
-                                   (Where      (nth 3 M)))
-                              `[,(make-local-func F1 (create-matcher-matcher Is
-                                                                             Left-side
-                                                                             F2
-                                                                             (if (eq? Where '___no_where)
-                                                                                 Right-side
-                                                                                 `[if ,Where
-                                                                                      ,Right-side
-                                                                                      ,F2])))
-                                ,@(create-local-funcs-0 Is Ms `[,F2 ,@Fs])]))
+  _  []       [Error-func] :> '[]
+  Is [M . Ms] [F1 F2 . Fs] :> (let* ((Left-side  (nth 1 M))
+                                     (Right-side (nth 2 M))
+                                     (Where      (nth 3 M)))
+                                `[,(make-local-func F1 (create-matcher-matcher Is
+                                                                               Left-side
+                                                                               F2
+                                                                               (if (eq? Where '___no_where)
+                                                                                   Right-side
+                                                                                   `[if ,Where
+                                                                                        ,Right-side
+                                                                                        ,F2])))
+                                  ,@(create-local-funcs-0 Is Ms `[,F2 ,@Fs])]))
 
 (define-match create-local-funcs
   All :> (let* ((Matchers (get-matchers All))
-                (Args     (pretty-print Matchers) (get-args (length (car (car Matchers)))))
+                (Args     (get-args (length (car (car Matchers)))))
                 (Function-names (append (get-function-names (length Matchers)) `[[error-no-match]])))
            (create-local-funcs-0 Args Matchers Function-names)))
 
@@ -517,5 +437,6 @@
 
 (test (create-matcher-func 'hepp '[ :> 1])
       '[define [hepp] [define [___Func1] 1] [___Func1]])
+
 
 

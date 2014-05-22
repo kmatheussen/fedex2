@@ -263,7 +263,7 @@
 
 (define get-matcher-where
   [Where What | Rest] Kont -> (Kont What Rest) where (= Where (value *where*))
-  Rest                Kont -> (Kont [quote ___no_where] Rest))
+  Rest                Kont -> (Kont ___no_where Rest))
 
 (define get-matchers
   []  -> []

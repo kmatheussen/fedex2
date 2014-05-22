@@ -1,15 +1,15 @@
-Provides a new macro called 'define-match', which make it possible
-to write pattern matcher functions which are similar in syntax to
+Provides a macro called 'define-match'. 'define-match' makes it possible
+to write pattern matcher functions which are similar to
 Qi and Shen.
 
 
 See test.scm for examples. Here is one of the tests:
 
-```
+```scheme
 ;;;;;;;; Quick sort
 
 (define-match keep
-  []         _    :> '[]
+  [        ] ____ :> '[]
   [A . Rest] Pred :> (cons A (keep Rest Pred)) :where (Pred A)
   [_ . Rest] Pred :> (keep Rest Pred))
  
@@ -26,7 +26,7 @@ See test.scm for examples. Here is one of the tests:
 
 The macro is by itself written using the 'define-match' macro, bootstrapped from shen. Here is one of the functions:
 
-```
+```scheme
 (define-match transform-to-check-similarities-0
   R                            _ R _       :> R
   [if Test Body F]             F R Varlist :> `[if ,Test ,(transform-to-check-similarities-0 Body F R Varlist) ,F]

@@ -73,12 +73,12 @@
   Var Value Varlist -> [[Var Value] | Varlist])
 
 (define varlist-value
-  _   []              -> ___not-in-varlist
+  _   []              -> -__not-in-varlist
   A   [[A Value] | _] -> Value
   Var [V | Vs]        -> (varlist-value Var Vs))
 
-(test (varlist-value 5 (create-varlist)) ___not-in-varlist)
-(test (varlist-value 5 (cons-varlist 1 "a" (create-varlist))) ___not-in-varlist)
+(test (varlist-value 5 (create-varlist)) -__not-in-varlist)
+(test (varlist-value 5 (cons-varlist 1 "a" (create-varlist))) -__not-in-varlist)
 (test (varlist-value 5 (cons-varlist 1 "a" (cons-varlist 5 "f" (create-varlist)))) "f")
 
 ;;;;;;;;;;;;;;;
@@ -87,7 +87,7 @@
   R                            _ R _       -> R
   [if Test Body F]             F R Varlist -> [if Test (transform-to-check-similarities-0 Body F R Varlist) F]
   [let [[Varname Value]] Body] F R Varlist -> (let Prev-value (varlist-value Varname Varlist)                                                    
-                                                (if (= Prev-value ___not-in-varlist)
+                                                (if (= Prev-value -__not-in-varlist)
                                                     [let [[Varname Value]]
                                                       (transform-to-check-similarities-0 Body F R (cons-varlist Varname Value Varlist))]
                                                     [if [equal? Varname Value]
@@ -104,19 +104,19 @@
 *\
 
 (test (transform-to-check-similarities [if [pair? A]
-                                           [let [[___MatchCar1 [car A]]
-                                                 [___MatchCdr2 [cdr A]]]
-                                             [let [[B ___MatchCar1]]
-                                               [let [[B ___MatchCar3]]
+                                           [let [[-__MatchCar1 [car A]]
+                                                 [-__MatchCdr2 [cdr A]]]
+                                             [let [[B -__MatchCar1]]
+                                               [let [[B -__MatchCar3]]
                                                  "r"]]]
                                            "f"]
                                        "f"
                                        "r")
       [if [pair? A]
-          [let [[___MatchCar1 [car A]]
-                [___MatchCdr2 [cdr A]]]
-            [let [[B ___MatchCar1]]
-              [if [equal? B ___MatchCar3]
+          [let [[-__MatchCar1 [car A]]
+                [-__MatchCdr2 [cdr A]]]
+            [let [[B -__MatchCar1]]
+              [if [equal? B -__MatchCar3]
                   "r"
                   "f"]]]
           "f"])
@@ -129,8 +129,8 @@
   I  [] F R -> [if [null? I]
                    R
                    F]
-  Input-var Matcher-var F R -> (let Car-var (my-gensym ___MatchCar)
-                                    Cdr-var (my-gensym ___MatchCdr)
+  Input-var Matcher-var F R -> (let Car-var (my-gensym -__MatchCar)
+                                    Cdr-var (my-gensym -__MatchCdr)
                                     Inner-Result (create-single-matcher Cdr-var (tail Matcher-var) F R)
                                     New-Result (create-single-matcher Car-var (head Matcher-var) F Inner-Result)
                                   [if [pair? Input-var]
@@ -170,32 +170,32 @@
 
 (test (with-clean-gensym (/. _ (create-single-matcher A [B B] "f" "r")))
       [if [pair? A]
-          [let [[___MatchCar1 [car A]]
-                [___MatchCdr2 [cdr A]]]
-            [let [[B ___MatchCar1]]
-              [if [pair? ___MatchCdr2]
-                  [let [[___MatchCar3 [car ___MatchCdr2]]
-                        [___MatchCdr4 [cdr ___MatchCdr2]]]
-                    [let [[B ___MatchCar3]]
-                      [if [null? ___MatchCdr4]
+          [let [[-__MatchCar1 [car A]]
+                [-__MatchCdr2 [cdr A]]]
+            [let [[B -__MatchCar1]]
+              [if [pair? -__MatchCdr2]
+                  [let [[-__MatchCar3 [car -__MatchCdr2]]
+                        [-__MatchCdr4 [cdr -__MatchCdr2]]]
+                    [let [[B -__MatchCar3]]
+                      [if [null? -__MatchCdr4]
                           "r" 
                           "f"]]]
                   "f"]]]
           "f"])
 (test (with-clean-gensym (/. _ (create-single-matcher A [[2] 4] "f" "r")))
       [if [pair? A]
-          [let [[___MatchCar1 [car A]]
-                [___MatchCdr2 [cdr A]]]
-            [if [pair? ___MatchCar1]
-                [let [[___MatchCar5 [car ___MatchCar1]]
-                      [___MatchCdr6 [cdr ___MatchCar1]]] 
-                  [if [eqv? ___MatchCar5 2]
-                      [if [null? ___MatchCdr6]
-                          [if [pair? ___MatchCdr2] 
-                              [let [[___MatchCar3 [car ___MatchCdr2]]
-                                    [___MatchCdr4 [cdr ___MatchCdr2]]] 
-                                [if [eqv? ___MatchCar3 4] 
-                                    [if [null? ___MatchCdr4] 
+          [let [[-__MatchCar1 [car A]]
+                [-__MatchCdr2 [cdr A]]]
+            [if [pair? -__MatchCar1]
+                [let [[-__MatchCar5 [car -__MatchCar1]]
+                      [-__MatchCdr6 [cdr -__MatchCar1]]] 
+                  [if [eqv? -__MatchCar5 2]
+                      [if [null? -__MatchCdr6]
+                          [if [pair? -__MatchCdr2] 
+                              [let [[-__MatchCar3 [car -__MatchCdr2]]
+                                    [-__MatchCdr4 [cdr -__MatchCdr2]]] 
+                                [if [eqv? -__MatchCar3 4] 
+                                    [if [null? -__MatchCdr4] 
                                         "r"
                                         "f"]
                                     "f"]]
@@ -263,7 +263,7 @@
 
 (define get-matcher-where
   [Where What | Rest] Kont -> (Kont What Rest) where (= Where (value *where*))
-  Rest                Kont -> (Kont ___no_where Rest))
+  Rest                Kont -> (Kont -__no_where Rest))
 
 (define get-matchers
   []  -> []
@@ -277,13 +277,13 @@
 
 \\ (untrack get-matchers)
 (test (get-matchers [A B (value *s*) 1 BW (value *u*) (value *s*) 2])
-      [[[A B] 1 ___no_where]
-       [[BW (value *u*)] 2 ___no_where]])
+      [[[A B] 1 -__no_where]
+       [[BW (value *u*)] 2 -__no_where]])
 
 (test (get-matchers [A B (value *s*) 1 (value *where*) [> A 2]
                      BW _ (value *s*) 2])
       [[[A B] 1 [> A 2]]
-       [[BW _] 2 ___no_where]])
+       [[BW _] 2 -__no_where]])
 
 
 
@@ -292,18 +292,18 @@
 (define get-args
   0 -> []
   N -> (append (get-args (- N 1))
-               [(gensym-from-symbol-and-number ___Arg N)]))
+               [(gensym-from-symbol-and-number -__Arg N)]))
 
 (test (get-args 2)
-      [___Arg1 ___Arg2])
+      [-__Arg1 -__Arg2])
 
 (define get-function-names
   0 -> []
   N -> (append (get-function-names (- N 1))
-               [[(gensym-from-symbol-and-number ___Func N)]]))
+               [[(gensym-from-symbol-and-number -__Func N)]]))
 
 (test (get-function-names 2)
-      [[___Func1] [___Func2]])
+      [[-__Func1] [-__Func2]])
 
 \\ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,7 +318,7 @@
                               [(make-local-func F1 (create-matcher-matcher Is
                                                                            Left-side
                                                                            F2
-                                                                           (if (= Where ___no_where)
+                                                                           (if (= Where -__no_where)
                                                                                Right-side
                                                                                [if Where
                                                                                    Right-side
@@ -334,15 +334,15 @@
 \\ (track create-matcher-0)
 (test (create-local-funcs [A  2 (value *s*) 1 (value *where*) [> A 5]
                            BW (value *u*) (value *s*) 2])
-      [[define [___Func1]
-         [let [[A ___Arg1]]
-           [if [eqv?  ___Arg2 2]
+      [[define [-__Func1]
+         [let [[A -__Arg1]]
+           [if [eqv?  -__Arg2 2]
                [if [> A 5]
                    1
-                   [___Func2]]
-               [___Func2]]]]
-       [define [___Func2]
-         [let [[BW ___Arg1]]
+                   [-__Func2]]
+               [-__Func2]]]]
+       [define [-__Func2]
+         [let [[BW -__Arg1]]
            2]]])
 
 \\;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -359,19 +359,19 @@
 
 (test (create-matcher-func prime? [A  2 (value *s*) 1
                                    BW (value *u*) (value *s*) 2])
-      [define [prime? ___Arg1 ___Arg2]
-        [define [___Func1]
-          [let [[A ___Arg1]]
-            [if [eqv? ___Arg2 2]
+      [define [prime? -__Arg1 -__Arg2]
+        [define [-__Func1]
+          [let [[A -__Arg1]]
+            [if [eqv? -__Arg2 2]
                 1
-                [___Func2]]]]
-        [define [___Func2] 
-          [let [[BW ___Arg1]]
+                [-__Func2]]]]
+        [define [-__Func2] 
+          [let [[BW -__Arg1]]
             2 ]]
-        [___Func1]])
+        [-__Func1]])
 
 
 (test (create-matcher-func hepp [ (value *s*) 1])
-      [define [hepp] [define [___Func1] 1] [___Func1]])
+      [define [hepp] [define [-__Func1] 1] [-__Func1]])
 
 

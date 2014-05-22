@@ -66,7 +66,7 @@
 ;;;;;;;; Quick sort
 
 (define-match keep
-  []         _    :> '[]
+  []         ____ :> '[]
   [A . Rest] Pred :> (cons A (keep Rest Pred)) :where (Pred A)
   [_ . Rest] Pred :> (keep Rest Pred))
  

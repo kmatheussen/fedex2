@@ -210,7 +210,7 @@
                                     ,R
                                     ,F]
                                :where (scheme-symbol? Matcher-var)
-  Input-var Matcher-var F R :> `[if [string? ,Input-var ,Matcher-var]
+  Input-var Matcher-var F R :> `[if [string=? ,Input-var ,Matcher-var]
                                     ,R
                                     ,F]
                                :where (string? Matcher-var)

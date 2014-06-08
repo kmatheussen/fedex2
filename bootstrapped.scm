@@ -359,7 +359,7 @@
         (let ((F -__Arg3))
           (let ((R -__Arg4))
             (if (string? Matcher-var)
-              `(if (string? ,Input-var ,Matcher-var) ,R ,F)
+              `(if (string=? ,Input-var ,Matcher-var) ,R ,F)
               (-__Func9)))))))
   (define (-__Func9)
     (let ((Input-var -__Arg1))

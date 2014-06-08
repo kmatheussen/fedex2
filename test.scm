@@ -38,7 +38,7 @@
       '(2 3 a 4))
 
 (define-match seq
-  Start Start :> (list Start)
+  Same  Same  :> (list Same)
   Start End   :> (cons Start (seq (+ Start 1) End)))
 
 (test (seq 5 8)
@@ -52,7 +52,7 @@
       '(2 3 4 5))
  
 (define-match permutate
-  []      :> '[[]]
+  [     ] :> '[[]]
   [H . T] :> (append-lists (map (lambda (P)
                                   (map (lambda (N)
                                            (insert P N H))
@@ -66,12 +66,12 @@
 ;;;;;;;; Quick sort
 
 (define-match keep
-  []         ____ :> '[]
+  [        ]  ____ :> '[]
   [A . Rest] Pred :> (cons A (keep Rest Pred)) :where (Pred A)
   [_ . Rest] Pred :> (keep Rest Pred))
  
 (define-match quicksort
-  []      :> '[]
+  [     ] :> '[]
   [A . R] :> (append (quicksort (keep R (lambda (B) (>= A B))))
                      (list A)
                      (quicksort (keep R (lambda (B) (< A B))))))
@@ -111,7 +111,7 @@
                       (fix Func Result))))
 
 (define-match bubble-shot
-  [A      ] :> (list A)
+  [A      ] :> (cons A '())
   [A B . R] :> (cons B (bubble-shot (cons A R))) :where (> A B)
   [A   . R] :> (cons A (bubble-shot R)))
  
@@ -131,7 +131,7 @@
   Small [X . Xs] Output :> (select-r Small Xs (cons X  Output)))
  
 (define-match selection-sort
-  []            :> '[]
+  [           ] :> '[]
   [First . Lst] :> (select-r First Lst '[]))
  
 (test (selection-sort '[8 7 7 4 3 2 0 9 1 5 6])
@@ -156,17 +156,24 @@
 ;;;;;;;;;;; Merge sort
 
 (define-match merge
-  [      ] Ys      :> Ys
+  [      ] Ys       :> Ys
   Xs       [      ] :> Xs
   [X . Xt] [Y . Yt] :> (cons X (merge Xt (cons Y Yt))) :where (<= X Y)
   [X . Xt] [Y . Yt] :> (cons Y (merge (cons X Xt) Yt)))
-  
-(test (merge '[1 2] '[3 4])
-      '[1 2 3 4])
+
+#!
+(track merge)
+!#
+
+(test (merge '[5 2] '[4 3])
+      '[4 2 3 5])
+
+(test (merge '[5 2 3] '[1 8 4])
+      '[1 5 2 8 3 4])
 
 (define-match split
-  []         K :> (K `[] '[])
-  [X]        K :> (K `[,X] '[])
+  [        ] K :> (K `[] '[])
+  [X       ] K :> (K `[,X] '[])
   [X Y . Zs] K :> (split Zs (lambda (Xs Ys)
                             (K (cons X Xs)
                                (cons Y Ys)))))

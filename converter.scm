@@ -108,9 +108,9 @@
   Var Value Varlist :> `[[,Var ,Value] ,@Varlist])
 
 (define-match varlist-value
-  ___ []              :> '-__not-in-varlist
-  A   [[A Value] . _] :> Value
-  Var [V . Vs]        :> (varlist-value Var Vs))
+  ___ [              ] :> '-__not-in-varlist
+  A   [[A Value] . __] :> Value
+  Var [_________ . Vs] :> (varlist-value Var Vs))
 
 (test (varlist-value 5 (create-varlist)) '-__not-in-varlist)
 (test (varlist-value 5 (cons-varlist 1 "a" (create-varlist))) '-__not-in-varlist)
@@ -200,16 +200,20 @@
                                             [,Cdr-var [cdr ,Input-var]]]
                                         ,New-Result]
                                       ,F])
-                                 :where (pair? Matcher-var)
+                               :where (pair? Matcher-var)
   Input-var Matcher-var F R :> `[let [[,Matcher-var ,Input-var]]
                                  ,R]
                                :where (var? Matcher-var)
   Input-var Matcher-var F R :> R :where (and (symbol? Matcher-var)
                                              (string=? "_" (substring (symbol->string Matcher-var) 0 1)))
-  Input-var Matcher-var F R :> `[if [eqv? ,Input-var [quote ,Matcher-var]]
+  Input-var Matcher-var F R :> `[if [eq? ,Input-var [quote ,Matcher-var]]
                                     ,R
                                     ,F]
                                :where (scheme-symbol? Matcher-var)
+  Input-var Matcher-var F R :> `[if [string? ,Input-var ,Matcher-var]
+                                    ,R
+                                    ,F]
+                               :where (string? Matcher-var)
   Input-var Matcher-var F R :> `[if [eqv? ,Input-var ,Matcher-var]
                                     ,R
                                     ,F])
@@ -223,7 +227,7 @@
           "r"
           "f"])
 (test (with-clean-gensym (lambda () (create-single-matcher 'A 'a "f" "r")))
-      `[if [eqv? A [quote a]]
+      `[if [eq? A [quote a]]
           "r"
           "f"])
 (test (with-clean-gensym (lambda () (create-single-matcher 'A 'B "f" "r")))
@@ -296,7 +300,7 @@
 
 (test (with-clean-gensym (lambda () (create-matcher-matcher '[A B] '[1 b] "n" "r")))
       `[if [eqv? A 1]
-           [if [eqv? B [quote b]]
+           [if [eq? B [quote b]]
                "r"
                "n"]
            "n"])

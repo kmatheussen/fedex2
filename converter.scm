@@ -320,15 +320,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-match list-split-0
+(define-match my-list-split-0
   Before [             ] Where Func :> (Func Before '[])
   Before [Where . After] Where Func :> (Func Before After)
-  Before [A     . After] Where Func :> (list-split-0 (append Before [list A]) After Where Func))
+  Before [A     . After] Where Func :> (my-list-split-0 (append Before [list A]) After Where Func))
 
-(define-match list-split
-  All Where Func :> (list-split-0 '() All Where Func))
+(define-match my-list-split
+  All Where Func :> (my-list-split-0 '() All Where Func))
 
-(test (list-split '[A B :> C D] ':> (lambda (B A) [list B A]))
+(test (my-list-split '[A B :> C D] ':> (lambda (B A) [list B A]))
       '[[A B] [C D]])
 
 
@@ -340,7 +340,7 @@
 
 (define-match get-matchers
   []  :> '[]
-  All :> (list-split All 
+  All :> (my-list-split All 
                      ':>
                      (lambda (Before After)
                        (let ((Result (car After)))
@@ -399,13 +399,15 @@
                                   ,@(create-local-funcs-0 Is Ms `[,F2 ,@Fs])]))
 
 (define-match create-local-funcs
-  All :> (let* ((Matchers (get-matchers All))
-                (Args     (get-args (length (car (car Matchers)))))
-                (Function-names (append (get-function-names (length Matchers)) `[[error-no-match]])))
-           (create-local-funcs-0 Args Matchers Function-names)))
+  Main-Func-Name All :> (let* ((Matchers (get-matchers All))
+                               (Args     (get-args (length (car (car Matchers)))))
+                               (Function-names (append (get-function-names (length Matchers))
+                                                       `[[error-no-match Main-Func-Name]])))
+                          (create-local-funcs-0 Args Matchers Function-names)))
 
-(test (create-local-funcs '[A  2 :> 1 :where [> A 5]
-                            BW _ :> 2])
+(test (create-local-funcs "main-func-name"
+                          '[A  2 :> 1 :where [> A 5]
+                               BW _ :> 2])
       `[[define [-__Func1]
          [let [[A -__Arg1]]
            [if [eqv?  -__Arg2 2]
@@ -421,13 +423,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-match create-matcher-func
-  Name Matchers :> (let* ((Num-args (list-split Matchers
-                                                ':>
-                                                (lambda (Before After)
-                                                  (length Before))))
+  Name Matchers :> (let* ((Num-args (my-list-split Matchers
+                                                   ':>
+                                                   (lambda (Before After)
+                                                     (length Before))))
                           (Args (get-args Num-args)))
                      (append '[define] `[[,Name ,@Args]]
-                             (create-local-funcs Matchers)
+                             (create-local-funcs (<-> Name) Matchers)
                              (get-function-names 1))))
 
 (test (create-matcher-func 'prime? '[A  2 :> 1

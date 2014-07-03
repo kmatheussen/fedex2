@@ -93,8 +93,7 @@
       (if (pair? -__Arg2)
         (let ((-__MatchCar7 (car -__Arg2))
               (-__MatchCdr8 (cdr -__Arg2)))
-          (let ((V -__MatchCar7))
-            (let ((Vs -__MatchCdr8)) (varlist-value Var Vs))))
+          (let ((Vs -__MatchCdr8)) (varlist-value Var Vs)))
         (error-no-match))))
   (-__Func1))
 (define (transform-to-check-similarities-0
@@ -352,9 +351,17 @@
         (let ((F -__Arg3))
           (let ((R -__Arg4))
             (if (scheme-symbol? Matcher-var)
-              `(if (eqv? ,Input-var ',Matcher-var) ,R ,F)
+              `(if (eq? ,Input-var ',Matcher-var) ,R ,F)
               (-__Func8)))))))
   (define (-__Func8)
+    (let ((Input-var -__Arg1))
+      (let ((Matcher-var -__Arg2))
+        (let ((F -__Arg3))
+          (let ((R -__Arg4))
+            (if (string? Matcher-var)
+              `(if (string=? ,Input-var ,Matcher-var) ,R ,F)
+              (-__Func9)))))))
+  (define (-__Func9)
     (let ((Input-var -__Arg1))
       (let ((Matcher-var -__Arg2))
         (let ((F -__Arg3))
@@ -412,7 +419,7 @@
               Failure
               Result))))))
   (-__Func1))
-(define (list-split-0 -__Arg1 -__Arg2 -__Arg3 -__Arg4)
+(define (my-list-split-0 -__Arg1 -__Arg2 -__Arg3 -__Arg4)
   (define (-__Func1)
     (let ((Before -__Arg1))
       (if (null? -__Arg2)
@@ -439,19 +446,19 @@
             (let ((After -__MatchCdr4))
               (let ((Where -__Arg3))
                 (let ((Func -__Arg4))
-                  (list-split-0
+                  (my-list-split-0
                     (append Before (list A))
                     After
                     Where
                     Func))))))
         (error-no-match))))
   (-__Func1))
-(define (list-split -__Arg1 -__Arg2 -__Arg3)
+(define (my-list-split -__Arg1 -__Arg2 -__Arg3)
   (define (-__Func1)
     (let ((All -__Arg1))
       (let ((Where -__Arg2))
         (let ((Func -__Arg3))
-          (list-split-0 '() All Where Func)))))
+          (my-list-split-0 '() All Where Func)))))
   (-__Func1))
 (define (get-matcher-where -__Arg1 -__Arg2)
   (define (-__Func1)
@@ -479,7 +486,7 @@
     (if (null? -__Arg1) '() (-__Func2)))
   (define (-__Func2)
     (let ((All -__Arg1))
-      (list-split
+      (my-list-split
         All
         ':>
         (lambda (Before After)
@@ -555,26 +562,27 @@
                 (error-no-match)))))
         (error-no-match))))
   (-__Func1))
-(define (create-local-funcs -__Arg1)
+(define (create-local-funcs -__Arg1 -__Arg2)
   (define (-__Func1)
-    (let ((All -__Arg1))
-      (let* ((Matchers (get-matchers All))
-             (Args (get-args (length (car (car Matchers)))))
-             (Function-names
-               (append
-                 (get-function-names (length Matchers))
-                 `((error-no-match)))))
-        (create-local-funcs-0
-          Args
-          Matchers
-          Function-names))))
+    (let ((Main-Func-Name -__Arg1))
+      (let ((All -__Arg2))
+        (let* ((Matchers (get-matchers All))
+               (Args (get-args (length (car (car Matchers)))))
+               (Function-names
+                 (append
+                   (get-function-names (length Matchers))
+                   `((error-no-match Main-Func-Name)))))
+          (create-local-funcs-0
+            Args
+            Matchers
+            Function-names)))))
   (-__Func1))
 (define (create-matcher-func -__Arg1 -__Arg2)
   (define (-__Func1)
     (let ((Name -__Arg1))
       (let ((Matchers -__Arg2))
         (let* ((Num-args
-                 (list-split
+                 (my-list-split
                    Matchers
                    ':>
                    (lambda (Before After) (length Before))))
@@ -582,6 +590,6 @@
           (append
             '(define)
             `((,Name ,@Args))
-            (create-local-funcs Matchers)
+            (create-local-funcs (<-> Name) Matchers)
             (get-function-names 1))))))
   (-__Func1))

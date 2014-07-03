@@ -1,5 +1,6 @@
 
-GUILE = GUILE_AUTO_COMPILE=0 GUILE_WARN_DEPRECATED=detailed guile --fresh-auto-compile
+GUILE = GUILE_AUTO_COMPILE=0 GUILE_WARN_DEPRECATED=detailed guile
+# --fresh-auto-compile
 
 test:
 	$(GUILE) test.scm
